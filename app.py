@@ -4,7 +4,7 @@ import joblib
 import numpy as np
 
 app = Flask(__name__)
-CORS(app)
+CORS(app) # CORS successfully enabled for Chrome testing
 
 # Load machine learning artifacts
 model = joblib.load('hifazat_model.pkl')
@@ -37,17 +37,21 @@ def predict():
         severity_label = encoder.inverse_transform([pred_idx])[0]
         confidence = float(np.max(probabilities) * 100)
 
-        # Map purity estimate based on ML severity classification
+        # --- FIX: Map the ML label to Flutter's expected UI Severity ---
         if severity_label == 'Safe':
+            frontend_severity = 'safe'
             purity = 98
         elif severity_label == 'Water Diluted':
+            frontend_severity = 'caution' # Triggers Yellow Warning in App
             purity = 75
-        else: # Chemically Adulterated / Powder(highly unsafe)
+        else: # Chemically Adulterated / Powder (highly unsafe)
+            frontend_severity = 'unsafe'  # Triggers Red Alert in App
             purity = 10
 
         return jsonify({
             'status': 'success',
-            'severity': severity_label,
+            'severity': frontend_severity, # Sends exactly what Flutter expects
+            'ml_label': severity_label,    # Keeps original for records
             'confidence': round(confidence, 1),
             'purity_percent': purity
         })
